@@ -787,7 +787,7 @@ function generatePdfReport() {
     startY: 100,
     head: [['TAMANHO', 'QTDE.', 'UNID.', 'VALOR']],
     body: rows,
-    foot: [['TOTAL GERAL:', String(totalQty), formatBRL(totalValue)]],
+    foot: [['TOTAL GERAL:', String(totalQty), '', formatBRL(totalValue)]],
     theme: 'plain',
     styles: { font: 'helvetica', fontSize: 11, cellPadding: 7, textColor: [20, 20, 20] },
     headStyles: { fontStyle: 'bold', halign: 'center', fontSize: 11 },
