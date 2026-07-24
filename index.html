@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root {
     --bg: #101014;
@@ -166,6 +168,7 @@
     margin-bottom: 18px;
   }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .toolbar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
@@ -195,6 +198,20 @@
     transition: filter 0.15s ease;
   }
   .btn-add:hover { filter: brightness(1.08); }
+
+  .btn-report {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 9px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-report:hover { border-color: var(--text-muted); background: var(--surface-2); }
 
   /* ---------- Add form ---------- */
   .add-form {
@@ -500,7 +517,10 @@
 
   <div class="toolbar">
     <div class="chips" id="chips"></div>
-    <button class="btn-add" id="toggleForm">+ Novo pedido</button>
+    <div class="toolbar-actions">
+      <button class="btn-report" id="generateReport">📄 Relatório PDF</button>
+      <button class="btn-add" id="toggleForm">+ Novo pedido</button>
+    </div>
   </div>
 
   <div class="add-form" id="addForm">
@@ -538,6 +558,7 @@
 <script>
 const DEPARTMENTS = ['Transmissão','Iluminação','Fotografia','Stories','Social Media'];
 const SIZES = ['PP','P','M','G','G1','G2'];
+const SHIRT_UNIT_PRICE = 60;
 const PAY1_DEADLINE = new Date('2026-08-05T23:59:59');
 const PAY2_DEADLINE = new Date('2026-09-05T23:59:59');
 
@@ -721,6 +742,77 @@ function renderStats() {
     sizeKeys.map(k => `<div class="size-summary-badge">${k}: <b>${bySize[k]}</b></div>`).join('');
 }
 
+function formatBRL(value) {
+  return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function generatePdfReport() {
+  if (!window.jspdf) {
+    showToast('Biblioteca de PDF ainda não carregou. Tente novamente em instantes.');
+    return;
+  }
+  if (orders.length === 0) {
+    showToast('Não há pedidos para gerar relatório.');
+    return;
+  }
+
+  const bySize = {};
+  orders.forEach(o => o.sizes.forEach(s => { bySize[s.size] = (bySize[s.size] || 0) + s.quantity; }));
+
+  const orderedKeys = SIZES.filter(s => bySize[s] > 0);
+  Object.keys(bySize).forEach(k => { if (!orderedKeys.includes(k)) orderedKeys.push(k); });
+
+  const rows = orderedKeys.map(size => {
+    const qty = bySize[size];
+    const value = qty * SHIRT_UNIT_PRICE;
+    return [size, String(qty), formatBRL(SHIRT_UNIT_PRICE), formatBRL(value)];
+  });
+
+  const totalQty = orderedKeys.reduce((sum, k) => sum + bySize[k], 0);
+  const totalValue = totalQty * SHIRT_UNIT_PRICE;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const center = pageWidth / 2;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('CONSOLIDAÇÃO', center, 54, { align: 'center' });
+  doc.setFontSize(13);
+  doc.text('RELATÓRIO DE QUANTIDADES E VALORES', center, 76, { align: 'center' });
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text('CONTROLE DE CAMISAS — EQUIPE DE MÍDIA', center, 96, { align: 'center' });
+
+  doc.autoTable({
+    startY: 130,
+    head: [['TAMANHO', 'QTDE.', 'UNID.', 'VALOR']],
+    body: rows,
+    foot: [['TOTAL GERAL:', String(totalQty), formatBRL(SHIRT_UNIT_PRICE), formatBRL(totalValue)]],
+    theme: 'plain',
+    styles: { font: 'helvetica', fontSize: 11, cellPadding: 7, textColor: [20, 20, 20] },
+    headStyles: { fontStyle: 'bold', halign: 'center', fontSize: 11 },
+    footStyles: { fontStyle: 'bold', fontSize: 11 },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 110 },
+      1: { halign: 'center', cellWidth: 110 },
+      2: { halign: 'center', cellWidth: 110 },
+      3: { halign: 'right', cellWidth: 110 }
+    },
+    didParseCell: (data) => {
+      if (data.section === 'foot') {
+        data.cell.styles.lineWidth = { top: 1 };
+        data.cell.styles.lineColor = [20, 20, 20];
+      }
+    }
+  });
+
+  const today = new Date().toISOString().slice(0, 10);
+  doc.save(`relatorio-camisas-${today}.pdf`);
+  showToast('Relatório PDF gerado.');
+}
+
 function tallyCell(order, field, deadline, label) {
   const on = order[field];
   const overdue = !on && new Date() > deadline;
@@ -902,6 +994,8 @@ $('#addSizeRowBtn').addEventListener('click', () => {
   newOrderSizes.push({ size: 'M', quantity: 1 });
   renderSizeBuilder();
 });
+
+$('#generateReport').addEventListener('click', generatePdfReport);
 
 $('#toggleForm').addEventListener('click', () => {
   $('#addForm').classList.toggle('open');
