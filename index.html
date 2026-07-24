@@ -771,6 +771,9 @@ function generatePdfReport() {
   const totalQty = orderedKeys.reduce((sum, k) => sum + bySize[k], 0);
   const totalValue = totalQty * SHIRT_UNIT_PRICE;
 
+  rows.push(['TOTAL GERAL:', String(totalQty), '', formatBRL(totalValue)]);
+  const totalRowIndex = rows.length - 1;
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -787,11 +790,9 @@ function generatePdfReport() {
     startY: 100,
     head: [['TAMANHO', 'QTDE.', 'UNID.', 'VALOR']],
     body: rows,
-    foot: [['TOTAL GERAL:', String(totalQty), '', formatBRL(totalValue)]],
     theme: 'plain',
     styles: { font: 'helvetica', fontSize: 11, cellPadding: 7, textColor: [20, 20, 20] },
     headStyles: { fontStyle: 'bold', halign: 'center', fontSize: 11 },
-    footStyles: { fontStyle: 'bold', fontSize: 11 },
     columnStyles: {
       0: { halign: 'center', cellWidth: 110 },
       1: { halign: 'center', cellWidth: 110 },
@@ -799,7 +800,8 @@ function generatePdfReport() {
       3: { halign: 'right', cellWidth: 110 }
     },
     didParseCell: (data) => {
-      if (data.section === 'foot') {
+      if (data.section === 'body' && data.row.index === totalRowIndex) {
+        data.cell.styles.fontStyle = 'bold';
         data.cell.styles.lineWidth = { top: 1 };
         data.cell.styles.lineColor = [20, 20, 20];
       }
