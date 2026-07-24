@@ -1,574 +1,916 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Camisas — Equipe de Mídia</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #101014;
-    --surface: #1a1a21;
-    --surface-2: #22222b;
-    --border: #303039;
-    --text: #F1EFEA;
-    --text-muted: #94919f;
-    --red: #E8483A;
-    --red-dim: rgba(232,72,58,0.18);
-    --green: #3ED98B;
-    --green-dim: rgba(62,217,139,0.18);
-    --amber: #F2B84B;
-    --amber-dim: rgba(242,184,75,0.16);
-    --radius: 10px;
-  }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Camisas — Equipe de Mídia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #101014;
+      --surface: #1a1a21;
+      --surface-2: #22222b;
+      --border: #303039;
+      --text: #F1EFEA;
+      --text-muted: #94919f;
+      --red: #E8483A;
+      --red-dim: rgba(232, 72, 58, 0.18);
+      --green: #3ED98B;
+      --green-dim: rgba(62, 217, 139, 0.18);
+      --amber: #F2B84B;
+      --amber-dim: rgba(242, 184, 75, 0.16);
+      --radius: 10px;
+    }
 
-  * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-  }
+    @media (prefers-reduced-motion: reduce) {
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-  }
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
 
-  #app { max-width: 1120px; margin: 0 auto; padding: 28px 20px 60px; }
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+    }
 
-  /* ---------- Header ---------- */
-  .eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--red);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-  .eyebrow::before {
-    content: "";
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--red);
-    box-shadow: 0 0 8px 1px var(--red);
-    animation: blink 2.2s ease-in-out infinite;
-  }
-  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+    #app {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
 
-  h1 {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 700;
-    font-size: clamp(32px, 6vw, 46px);
-    letter-spacing: 0.01em;
-    margin: 0 0 4px;
-    line-height: 0.98;
-  }
-  .subtitle { color: var(--text-muted); font-size: 14px; margin: 0 0 22px; }
+    /* ---------- Header ---------- */
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--red);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
 
-  /* ---------- Summary strip ---------- */
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .stat {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 14px;
-  }
-  .stat-num {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 24px;
-    font-weight: 600;
-  }
-  .stat-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-top: 2px;
-  }
+    .eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 8px 1px var(--red);
+      animation: blink 2.2s ease-in-out infinite;
+    }
 
-  .size-summary-strip {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 22px;
-  }
-  .size-summary-badge {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-  .size-summary-badge b { color: var(--text); font-size: 13px; }
+    @keyframes blink {
 
-  /* ---------- Filter bar ---------- */
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-  }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    padding: 6px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-  .chip:hover { border-color: var(--text-muted); color: var(--text); }
-  .chip.active { background: var(--red-dim); border-color: var(--red); color: var(--text); }
-  .chip.chip-multi { border-color: var(--amber); color: var(--amber); }
-  .chip.chip-multi.active { background: var(--amber-dim); border-color: var(--amber); color: var(--text); }
+      0%,
+      100% {
+        opacity: 1;
+      }
 
-  .btn-add {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    background: var(--green);
-    color: #0c1a12;
-    border: none;
-    padding: 9px 16px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: filter 0.15s ease;
-  }
-  .btn-add:hover { filter: brightness(1.08); }
+      50% {
+        opacity: 0.35;
+      }
+    }
 
-  /* ---------- Add form ---------- */
-  .add-form {
-    display: none;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 18px;
-  }
-  .add-form.open { display: block; }
-  .add-form-grid {
-    display: grid;
-    grid-template-columns: 2fr 1.4fr;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-  .add-form label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 4px; }
-  .field input, .field select {
-    width: 100%;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 9px 10px;
-    border-radius: 8px;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-  }
-  .field input:focus, .field select:focus, button:focus-visible, .chip:focus-visible {
-    outline: 2px solid var(--amber);
-    outline-offset: 1px;
-  }
+    h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: clamp(32px, 6vw, 46px);
+      letter-spacing: 0.01em;
+      margin: 0 0 4px;
+      line-height: 0.98;
+    }
 
-  .sizes-builder-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 6px; }
-  .sizes-builder-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-  .size-builder-row { display: flex; gap: 8px; align-items: center; }
-  .size-builder-row select, .size-builder-row input { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); padding: 7px 8px; border-radius: 8px; font-size: 13px; }
-  .size-builder-row select { flex: 1; }
-  .size-builder-row input { width: 60px; text-align: center; }
-  .size-builder-row .remove-size-row { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 15px; padding: 4px 6px; }
-  .size-builder-row .remove-size-row:hover { color: var(--red); }
-  .add-size-row-btn {
-    background: var(--surface-2); border: 1px dashed var(--border); color: var(--text-muted);
-    padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: 'IBM Plex Mono', monospace;
-  }
-  .add-size-row-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin: 0 0 22px;
+    }
 
-  .submit-row { display: flex; justify-content: flex-end; }
-  .submit-row button {
-    background: var(--red);
-    color: white;
-    border: none;
-    padding: 9px 18px;
-    border-radius: 8px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  /* ---------- Table ---------- */
-  .list-head {
-    display: grid;
-    grid-template-columns: 1.3fr 1.1fr 1.8fr 0.9fr 0.9fr 0.8fr 0.4fr;
-    gap: 8px;
-    padding: 0 14px 8px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .row-block { margin-bottom: 8px; }
-  .row {
-    display: grid;
-    grid-template-columns: 1.3fr 1.1fr 1.8fr 0.9fr 0.9fr 0.8fr 0.4fr;
-    gap: 8px;
-    align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-  }
-  .row-block:has(.size-panel) .row { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-  .row input, .row select {
-    width: 100%;
-    background: transparent;
-    border: 1px solid transparent;
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
-    padding: 5px 6px;
-    border-radius: 6px;
-  }
-  .row input:hover, .row select:hover { background: var(--surface-2); }
-  .row input:focus, .row select:focus { background: var(--surface-2); border-color: var(--border); }
-
-  .tally-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-  .tally {
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--surface-2);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    position: relative;
-  }
-  .tally.on {
-    background: var(--green);
-    border-color: var(--green);
-    box-shadow: 0 0 10px 1px rgba(62,217,139,0.55);
-  }
-  .tally.overdue { border-color: var(--red); box-shadow: 0 0 8px 0 rgba(232,72,58,0.4); }
-  .tally-deadline { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); }
-  .tally-deadline.overdue-label { color: var(--red); }
-
-  .sizes-cell-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; display: block; margin-bottom: 3px; }
-
-  .size-chips-inline { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
-  .size-chip {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 3px 8px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-  .size-chip.multi { background: var(--amber-dim); border-color: var(--amber); color: var(--text); }
-  .size-chip.empty { color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 12px; background: none; border: 1px dashed var(--border); }
-
-  .sizes-edit-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    padding: 2px 0;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .sizes-edit-btn:hover { color: var(--text); }
-
-  .row.has-multi { border-left: 3px solid var(--amber); }
-
-  .del-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 4px;
-    border-radius: 6px;
-  }
-  .del-btn:hover { color: var(--red); background: var(--red-dim); }
-
-  .size-panel {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-top: none;
-    border-bottom-left-radius: var(--radius);
-    border-bottom-right-radius: var(--radius);
-    padding: 12px 14px;
-  }
-  .size-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .size-tag {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 4px 6px 4px 12px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .size-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; border-radius: 50%; width: 18px; height: 18px; }
-  .size-remove:hover { color: var(--red); }
-  .size-add-row { display: flex; gap: 8px; }
-  .size-add-row select, .size-add-row input { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 8px; border-radius: 8px; font-size: 13px; }
-  .size-add-row input { width: 60px; text-align: center; }
-  .size-add-row button {
-    background: var(--green); color: #0c1a12; border: none; padding: 6px 12px; border-radius: 8px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer;
-  }
-
-  .empty {
-    text-align: center;
-    padding: 50px 20px;
-    color: var(--text-muted);
-    border: 1px dashed var(--border);
-    border-radius: var(--radius);
-  }
-  .empty strong { color: var(--text); display: block; margin-bottom: 6px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; }
-
-  .toast {
-    position: fixed;
-    bottom: 20px; left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    padding: 10px 18px;
-    border-radius: 999px;
-    font-size: 13px;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.2s ease;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  /* ---------- Mobile ---------- */
-  @media (max-width: 720px) {
-    .stats { grid-template-columns: repeat(2, 1fr); }
-    .add-form-grid { grid-template-columns: 1fr; }
-    .list-head { display: none; }
-    .row {
-      grid-template-columns: 1fr;
+    /* ---------- Summary strip ---------- */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
+      margin-bottom: 10px;
     }
-  }
-</style>
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+    }
+
+    .stat-num {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    .size-summary-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .size-summary-badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .size-summary-badge b {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    /* ---------- Filter bar ---------- */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chip:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+
+    .chip.active {
+      background: var(--red-dim);
+      border-color: var(--red);
+      color: var(--text);
+    }
+
+    .chip.chip-multi {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .chip.chip-multi.active {
+      background: var(--amber-dim);
+      border-color: var(--amber);
+      color: var(--text);
+    }
+
+    .btn-add {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--green);
+      color: #0c1a12;
+      border: none;
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: filter 0.15s ease;
+    }
+
+    .btn-add:hover {
+      filter: brightness(1.08);
+    }
+
+    /* ---------- Add form ---------- */
+    .add-form {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .add-form.open {
+      display: block;
+    }
+
+    .add-form-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.4fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .add-form label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    button:focus-visible,
+    .chip:focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 1px;
+    }
+
+    .sizes-builder-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .sizes-builder-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .size-builder-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .size-builder-row select,
+    .size-builder-row input {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .size-builder-row select {
+      flex: 1;
+    }
+
+    .size-builder-row input {
+      width: 60px;
+      text-align: center;
+    }
+
+    .size-builder-row .remove-size-row {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 4px 6px;
+    }
+
+    .size-builder-row .remove-size-row:hover {
+      color: var(--red);
+    }
+
+    .add-size-row-btn {
+      background: var(--surface-2);
+      border: 1px dashed var(--border);
+      color: var(--text-muted);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .add-size-row-btn:hover {
+      color: var(--text);
+      border-color: var(--text-muted);
+    }
+
+    .submit-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .submit-row button {
+      background: var(--red);
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* ---------- Table ---------- */
+    .list-head {
+      display: grid;
+      grid-template-columns: 1.3fr 1.1fr 1.8fr 0.9fr 0.9fr 0.8fr 0.4fr;
+      gap: 8px;
+      padding: 0 14px 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .row-block {
+      margin-bottom: 8px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1.3fr 1.1fr 1.8fr 0.9fr 0.9fr 0.8fr 0.4fr;
+      gap: 8px;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+    }
+
+    .row-block:has(.size-panel) .row {
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .row input,
+    .row select {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      padding: 5px 6px;
+      border-radius: 6px;
+    }
+
+    .row input:hover,
+    .row select:hover {
+      background: var(--surface-2);
+    }
+
+    .row input:focus,
+    .row select:focus {
+      background: var(--surface-2);
+      border-color: var(--border);
+    }
+
+    .tally-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .tally {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--surface-2);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .tally.on {
+      background: var(--green);
+      border-color: var(--green);
+      box-shadow: 0 0 10px 1px rgba(62, 217, 139, 0.55);
+    }
+
+    .tally.overdue {
+      border-color: var(--red);
+      box-shadow: 0 0 8px 0 rgba(232, 72, 58, 0.4);
+    }
+
+    .tally-deadline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .tally-deadline.overdue-label {
+      color: var(--red);
+    }
+
+    .sizes-cell-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .size-chips-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .size-chip {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .size-chip.multi {
+      background: var(--amber-dim);
+      border-color: var(--amber);
+      color: var(--text);
+    }
+
+    .size-chip.empty {
+      color: var(--text-muted);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      background: none;
+      border: 1px dashed var(--border);
+    }
+
+    .sizes-edit-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 2px 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .sizes-edit-btn:hover {
+      color: var(--text);
+    }
+
+    .row.has-multi {
+      border-left: 3px solid var(--amber);
+    }
+
+    .del-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    .del-btn:hover {
+      color: var(--red);
+      background: var(--red-dim);
+    }
+
+    .size-panel {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-bottom-left-radius: var(--radius);
+      border-bottom-right-radius: var(--radius);
+      padding: 12px 14px;
+    }
+
+    .size-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .size-tag {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 6px 4px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .size-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+    }
+
+    .size-remove:hover {
+      color: var(--red);
+    }
+
+    .size-add-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .size-add-row select,
+    .size-add-row input {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .size-add-row input {
+      width: 60px;
+      text-align: center;
+    }
+
+    .size-add-row button {
+      background: var(--green);
+      color: #0c1a12;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-muted);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+    }
+
+    .empty strong {
+      color: var(--text);
+      display: block;
+      margin-bottom: 6px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 720px) {
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .add-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .list-head {
+        display: none;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div id="app">
-  <div class="eyebrow">Equipe de Mídia — Ao Vivo</div>
-  <h1>Controle de Camisas</h1>
-  <p class="subtitle">Transmissão · Iluminação · Fotografia · Stories · Social Media</p>
+  <div id="app">
+    <div class="eyebrow">Equipe de Mídia — Ao Vivo</div>
+    <h1>Controle de Camisas</h1>
+    <p class="subtitle">Transmissão · Iluminação · Fotografia · Stories · Social Media</p>
 
-  <div class="stats" id="stats"></div>
-  <div class="size-summary-strip" id="sizeSummaryStrip"></div>
+    <div class="stats" id="stats"></div>
+    <div class="size-summary-strip" id="sizeSummaryStrip"></div>
 
-  <div class="toolbar">
-    <div class="chips" id="chips"></div>
-    <button class="btn-add" id="toggleForm">+ Novo pedido</button>
-  </div>
+    <div class="toolbar">
+      <div class="chips" id="chips"></div>
+      <button class="btn-add" id="toggleForm">+ Novo pedido</button>
+    </div>
 
-  <div class="add-form" id="addForm">
-    <div class="add-form-grid">
-      <div class="field">
-        <label>Nome</label>
-        <input type="text" id="newName" placeholder="Nome da pessoa">
+    <div class="add-form" id="addForm">
+      <div class="add-form-grid">
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="newName" placeholder="Nome da pessoa">
+        </div>
+        <div class="field">
+          <label>Departamento</label>
+          <select id="newDept"></select>
+        </div>
       </div>
-      <div class="field">
-        <label>Departamento</label>
-        <select id="newDept"></select>
+      <span class="sizes-builder-label">Tamanhos</span>
+      <div class="sizes-builder-rows" id="sizeBuilderRows"></div>
+      <button class="add-size-row-btn" id="addSizeRowBtn" type="button">+ Adicionar tamanho</button>
+      <div class="submit-row" style="margin-top:14px;">
+        <button id="submitNew">Adicionar pedido</button>
       </div>
     </div>
-    <span class="sizes-builder-label">Tamanhos</span>
-    <div class="sizes-builder-rows" id="sizeBuilderRows"></div>
-    <button class="add-size-row-btn" id="addSizeRowBtn" type="button">+ Adicionar tamanho</button>
-    <div class="submit-row" style="margin-top:14px;">
-      <button id="submitNew">Adicionar pedido</button>
+
+    <div class="list-head">
+      <div>Nome</div>
+      <div>Departamento</div>
+      <div>Tamanhos</div>
+      <div>Pag. 1</div>
+      <div>Pag. 2</div>
+      <div>Entregue</div>
+      <div></div>
+    </div>
+
+    <div id="list"></div>
+    <div class="empty" id="emptyState" style="display:none;">
+      <strong>Nenhum pedido ainda</strong>
+      Clique em "+ Novo pedido" para registrar o primeiro membro da equipe.
     </div>
   </div>
+  <div class="toast" id="toast"></div>
 
-  <div class="list-head">
-    <div>Nome</div><div>Departamento</div><div>Tamanhos</div>
-    <div>Pag. 1</div><div>Pag. 2</div><div>Entregue</div><div></div>
-  </div>
+  <script>
+    const DEPARTMENTS = ['Transmissão', 'Iluminação', 'Fotografia', 'Stories', 'Social Media'];
+    const SIZES = ['PP', 'P', 'M', 'G', 'GG', 'XG'];
+    const PAY1_DEADLINE = new Date('2026-08-05T23:59:59');
+    const PAY2_DEADLINE = new Date('2026-09-05T23:59:59');
 
-  <div id="list"></div>
-  <div class="empty" id="emptyState" style="display:none;">
-    <strong>Nenhum pedido ainda</strong>
-    Clique em "+ Novo pedido" para registrar o primeiro membro da equipe.
-  </div>
-</div>
-<div class="toast" id="toast"></div>
+    // ====== CONFIGURAÇÃO DO SUPABASE — COLE SUAS CREDENCIAIS AQUI ======
+    const SUPABASE_URL = 'https://fuilsqakfhzgadshopan.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_bhUX3iCEPheSGRs0rcYcDg_u7YEJAfC';
+    const TABLE = 'shirt_orders';
+    // ====================================================================
 
-<script>
-const DEPARTMENTS = ['Transmissão','Iluminação','Fotografia','Stories','Social Media'];
-const SIZES = ['PP','P','M','G','GG','XG'];
-const PAY1_DEADLINE = new Date('2026-08-05T23:59:59');
-const PAY2_DEADLINE = new Date('2026-09-05T23:59:59');
-const STORAGE_KEY = 'shirt-orders';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let orders = [];
-let activeFilter = 'Todos';
-let expandedRows = new Set();
-let newOrderSizes = [{ size: 'M', quantity: 1 }];
-let loaded = false;
+    let orders = [];
+    let activeFilter = 'Todos';
+    let expandedRows = new Set();
+    let newOrderSizes = [{ size: 'M', quantity: 1 }];
+    let loaded = false;
 
-const $ = (sel) => document.querySelector(sel);
-const listEl = $('#list');
-const statsEl = $('#stats');
-const sizeSummaryStripEl = $('#sizeSummaryStrip');
-const chipsEl = $('#chips');
-const emptyEl = $('#emptyState');
-const toastEl = $('#toast');
+    const $ = (sel) => document.querySelector(sel);
+    const listEl = $('#list');
+    const statsEl = $('#stats');
+    const sizeSummaryStripEl = $('#sizeSummaryStrip');
+    const chipsEl = $('#chips');
+    const emptyEl = $('#emptyState');
+    const toastEl = $('#toast');
 
-function showToast(msg) {
-  toastEl.textContent = msg;
-  toastEl.classList.add('show');
-  setTimeout(() => toastEl.classList.remove('show'), 1800);
-}
-
-function fmtDate(d) {
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-}
-
-function totalQty(order) {
-  return order.sizes.reduce((s, x) => s + x.quantity, 0);
-}
-
-async function loadOrders() {
-  try {
-    const result = await window.storage.get(STORAGE_KEY, false);
-    orders = result && result.value ? JSON.parse(result.value) : [];
-  } catch (e) {
-    orders = [];
-  }
-  // migrate legacy entries that used a single `quantity` field
-  orders.forEach(o => {
-    if (!o.sizes) {
-      o.sizes = [{ size: 'Não informado', quantity: o.quantity || 1 }];
-      delete o.quantity;
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 1800);
     }
-  });
-  loaded = true;
-  render();
-}
 
-async function saveOrders() {
-  try {
-    const result = await window.storage.set(STORAGE_KEY, JSON.stringify(orders), false);
-    if (!result) showToast('Não foi possível salvar. Tente novamente.');
-  } catch (e) {
-    showToast('Erro ao salvar os dados.');
-  }
-}
+    function fmtDate(d) {
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
 
-function addOrder(name, dept, sizes) {
-  orders.push({
-    id: crypto.randomUUID(),
-    name: name.trim(),
-    department: dept,
-    sizes: sizes.filter(s => s.quantity > 0),
-    payment1: false,
-    payment2: false,
-    delivered: false
-  });
-  saveOrders();
-  render();
-}
+    function totalQty(order) {
+      return order.sizes.reduce((s, x) => s + x.quantity, 0);
+    }
 
-function updateOrder(id, patch) {
-  const o = orders.find(x => x.id === id);
-  if (!o) return;
-  Object.assign(o, patch);
-  saveOrders();
-  render();
-}
-
-function deleteOrder(id) {
-  const o = orders.find(x => x.id === id);
-  if (!o) return;
-  if (!confirm(`Remover o pedido de ${o.name}?`)) return;
-  orders = orders.filter(x => x.id !== id);
-  saveOrders();
-  render();
-}
-
-function renderChips() {
-  const options = ['Todos', ...DEPARTMENTS, { value: 'MULTI', label: 'Múltiplos tamanhos' }];
-  chipsEl.innerHTML = options.map(opt => {
-    const value = typeof opt === 'string' ? opt : opt.value;
-    const label = typeof opt === 'string' ? opt : opt.label;
-    const isMulti = value === 'MULTI';
-    return `<button class="chip ${isMulti ? 'chip-multi' : ''} ${activeFilter === value ? 'active' : ''}" data-dept="${value}">${label}</button>`;
-  }).join('');
-  chipsEl.querySelectorAll('.chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      activeFilter = chip.dataset.dept;
+    async function loadOrders() {
+      try {
+        const { data, error } = await supabaseClient
+          .from(TABLE)
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        orders = (data || []).map(r => ({
+          id: r.id,
+          name: r.name,
+          department: r.department,
+          sizes: r.sizes || [],
+          payment1: r.payment1,
+          payment2: r.payment2,
+          delivered: r.delivered
+        }));
+      } catch (e) {
+        orders = [];
+        showToast('Erro ao carregar dados do banco. Confira a configuração do Supabase.');
+        console.error(e);
+      }
+      loaded = true;
       render();
-    });
-  });
-}
+    }
 
-function renderStats() {
-  const total = orders.length;
-  const totalShirts = orders.reduce((s, o) => s + totalQty(o), 0);
-  const pay1 = orders.filter(o => o.payment1).length;
-  const pay2 = orders.filter(o => o.payment2).length;
-  const delivered = orders.filter(o => o.delivered).length;
+    async function addOrder(name, dept, sizes) {
+      const payload = {
+        name: name.trim(),
+        department: dept,
+        sizes: sizes.filter(s => s.quantity > 0),
+        payment1: false,
+        payment2: false,
+        delivered: false
+      };
+      try {
+        const { data, error } = await supabaseClient
+          .from(TABLE)
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        orders.push({
+          id: data.id,
+          name: data.name,
+          department: data.department,
+          sizes: data.sizes || [],
+          payment1: data.payment1,
+          payment2: data.payment2,
+          delivered: data.delivered
+        });
+        render();
+      } catch (e) {
+        showToast('Erro ao salvar novo pedido no banco.');
+        console.error(e);
+      }
+    }
 
-  const stats = [
-    { num: total, label: 'Pessoas' },
-    { num: totalShirts, label: 'Camisas' },
-    { num: `${pay1}/${total}`, label: 'Pagamento 1' },
-    { num: `${pay2}/${total}`, label: 'Pagamento 2' },
-    { num: `${delivered}/${total}`, label: 'Entregues' }
-  ];
-  statsEl.innerHTML = stats.map(s =>
-    `<div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`
-  ).join('');
+    async function updateOrder(id, patch) {
+      const o = orders.find(x => x.id === id);
+      if (!o) return;
+      Object.assign(o, patch);
+      render();
+      try {
+        const { error } = await supabaseClient.from(TABLE).update(patch).eq('id', id);
+        if (error) throw error;
+      } catch (e) {
+        showToast('Erro ao salvar alteração no banco.');
+        console.error(e);
+      }
+    }
 
-  const bySize = {};
-  orders.forEach(o => o.sizes.forEach(s => { bySize[s.size] = (bySize[s.size] || 0) + s.quantity; }));
-  const sizeKeys = Object.keys(bySize);
-  sizeSummaryStripEl.innerHTML = sizeKeys.length === 0 ? '' :
-    sizeKeys.map(k => `<div class="size-summary-badge">${k}: <b>${bySize[k]}</b></div>`).join('');
-}
+    async function deleteOrder(id) {
+      const o = orders.find(x => x.id === id);
+      if (!o) return;
+      if (!confirm(`Remover o pedido de ${o.name}?`)) return;
+      orders = orders.filter(x => x.id !== id);
+      render();
+      try {
+        const { error } = await supabaseClient.from(TABLE).delete().eq('id', id);
+        if (error) throw error;
+      } catch (e) {
+        showToast('Erro ao remover pedido no banco.');
+        console.error(e);
+      }
+    }
 
-function tallyCell(order, field, deadline, label) {
-  const on = order[field];
-  const overdue = !on && new Date() > deadline;
-  return `
+    async function saveSizes(id, sizes) {
+      const o = orders.find(x => x.id === id);
+      if (o) o.sizes = sizes;
+      render();
+      try {
+        const { error } = await supabaseClient.from(TABLE).update({ sizes }).eq('id', id);
+        if (error) throw error;
+      } catch (e) {
+        showToast('Erro ao salvar tamanhos no banco.');
+        console.error(e);
+      }
+    }
+
+    function renderChips() {
+      const options = ['Todos', ...DEPARTMENTS, { value: 'MULTI', label: 'Múltiplos tamanhos' }];
+      chipsEl.innerHTML = options.map(opt => {
+        const value = typeof opt === 'string' ? opt : opt.value;
+        const label = typeof opt === 'string' ? opt : opt.label;
+        const isMulti = value === 'MULTI';
+        return `<button class="chip ${isMulti ? 'chip-multi' : ''} ${activeFilter === value ? 'active' : ''}" data-dept="${value}">${label}</button>`;
+      }).join('');
+      chipsEl.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          activeFilter = chip.dataset.dept;
+          render();
+        });
+      });
+    }
+
+    function renderStats() {
+      const total = orders.length;
+      const totalShirts = orders.reduce((s, o) => s + totalQty(o), 0);
+      const pay1 = orders.filter(o => o.payment1).length;
+      const pay2 = orders.filter(o => o.payment2).length;
+      const delivered = orders.filter(o => o.delivered).length;
+
+      const stats = [
+        { num: total, label: 'Pessoas' },
+        { num: totalShirts, label: 'Camisas' },
+        { num: `${pay1}/${total}`, label: 'Pagamento 1' },
+        { num: `${pay2}/${total}`, label: 'Pagamento 2' },
+        { num: `${delivered}/${total}`, label: 'Entregues' }
+      ];
+      statsEl.innerHTML = stats.map(s =>
+        `<div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`
+      ).join('');
+
+      const bySize = {};
+      orders.forEach(o => o.sizes.forEach(s => { bySize[s.size] = (bySize[s.size] || 0) + s.quantity; }));
+      const sizeKeys = Object.keys(bySize);
+      sizeSummaryStripEl.innerHTML = sizeKeys.length === 0 ? '' :
+        sizeKeys.map(k => `<div class="size-summary-badge">${k}: <b>${bySize[k]}</b></div>`).join('');
+    }
+
+    function tallyCell(order, field, deadline, label) {
+      const on = order[field];
+      const overdue = !on && new Date() > deadline;
+      return `
     <div class="tally-cell">
       <div class="tally ${on ? 'on' : ''} ${overdue ? 'overdue' : ''}" data-id="${order.id}" data-field="${field}" title="${label}"></div>
       <span class="tally-deadline ${overdue ? 'overdue-label' : ''}">${overdue ? 'atrasado' : fmtDate(deadline)}</span>
     </div>`;
-}
+    }
 
-function sizePanel(order) {
-  return `
+    function sizePanel(order) {
+      return `
     <div class="size-panel" data-id="${order.id}">
       <div class="size-tags">
         ${order.sizes.map((s, i) => `
@@ -584,34 +926,34 @@ function sizePanel(order) {
         <button class="row-size-add" data-id="${order.id}">+ Adicionar</button>
       </div>
     </div>`;
-}
+    }
 
-function renderList() {
-  const filtered = activeFilter === 'Todos' ? orders
-    : activeFilter === 'MULTI' ? orders.filter(o => o.sizes.length > 1)
-    : orders.filter(o => o.department === activeFilter);
+    function renderList() {
+      const filtered = activeFilter === 'Todos' ? orders
+        : activeFilter === 'MULTI' ? orders.filter(o => o.sizes.length > 1)
+          : orders.filter(o => o.department === activeFilter);
 
-  if (orders.length === 0) {
-    listEl.innerHTML = '';
-    emptyEl.style.display = 'block';
-    emptyEl.querySelector('strong').textContent = 'Nenhum pedido ainda';
-    emptyEl.lastChild.textContent = 'Clique em "+ Novo pedido" para registrar o primeiro membro da equipe.';
-    return;
-  }
-  if (filtered.length === 0) {
-    listEl.innerHTML = '';
-    emptyEl.style.display = 'block';
-    emptyEl.querySelector('strong').textContent = 'Nada por aqui';
-    emptyEl.lastChild.textContent = activeFilter === 'MULTI'
-      ? 'Ninguém com mais de um tamanho registrado ainda.'
-      : `Ninguém registrado em "${activeFilter}" ainda.`;
-    return;
-  }
-  emptyEl.style.display = 'none';
+      if (orders.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        emptyEl.querySelector('strong').textContent = 'Nenhum pedido ainda';
+        emptyEl.lastChild.textContent = 'Clique em "+ Novo pedido" para registrar o primeiro membro da equipe.';
+        return;
+      }
+      if (filtered.length === 0) {
+        listEl.innerHTML = '';
+        emptyEl.style.display = 'block';
+        emptyEl.querySelector('strong').textContent = 'Nada por aqui';
+        emptyEl.lastChild.textContent = activeFilter === 'MULTI'
+          ? 'Ninguém com mais de um tamanho registrado ainda.'
+          : `Ninguém registrado em "${activeFilter}" ainda.`;
+        return;
+      }
+      emptyEl.style.display = 'none';
 
-  listEl.innerHTML = filtered.map(o => {
-    const isMulti = o.sizes.length > 1;
-    return `
+      listEl.innerHTML = filtered.map(o => {
+        const isMulti = o.sizes.length > 1;
+        return `
     <div class="row-block">
       <div class="row ${isMulti ? 'has-multi' : ''}" data-id="${o.id}">
         <div><input type="text" class="edit-name" value="${o.name.replace(/"/g, '&quot;')}"></div>
@@ -637,67 +979,67 @@ function renderList() {
       ${expandedRows.has(o.id) ? sizePanel(o) : ''}
     </div>
   `;
-  }).join('');
+      }).join('');
 
-  listEl.querySelectorAll('.tally').forEach(t => {
-    t.addEventListener('click', () => {
-      const id = t.dataset.id;
-      const field = t.dataset.field;
-      const o = orders.find(x => x.id === id);
-      updateOrder(id, { [field]: !o[field] });
-    });
-  });
-  listEl.querySelectorAll('.edit-name').forEach(inp => {
-    inp.addEventListener('change', () => updateOrder(inp.closest('.row').dataset.id, { name: inp.value.trim() || 'Sem nome' }));
-  });
-  listEl.querySelectorAll('.edit-dept').forEach(sel => {
-    sel.addEventListener('change', () => updateOrder(sel.closest('.row').dataset.id, { department: sel.value }));
-  });
-  listEl.querySelectorAll('.del-btn').forEach(btn => {
-    btn.addEventListener('click', () => deleteOrder(btn.dataset.id));
-  });
-  listEl.querySelectorAll('.sizes-edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
-      if (expandedRows.has(id)) expandedRows.delete(id); else expandedRows.add(id);
-      render();
-    });
-  });
-  listEl.querySelectorAll('.row-size-add').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
-      const select = listEl.querySelector(`.row-size-select[data-id="${id}"]`);
-      const qtyInput = listEl.querySelector(`.row-size-qty[data-id="${id}"]`);
-      const qty = Math.max(1, parseInt(qtyInput.value) || 1);
-      const o = orders.find(x => x.id === id);
-      const existing = o.sizes.find(s => s.size === select.value);
-      if (existing) existing.quantity += qty;
-      else o.sizes.push({ size: select.value, quantity: qty });
-      saveOrders();
-      render();
-    });
-  });
-  listEl.querySelectorAll('.size-remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.id;
-      const idx = parseInt(btn.dataset.idx);
-      const o = orders.find(x => x.id === id);
-      o.sizes.splice(idx, 1);
-      saveOrders();
-      render();
-    });
-  });
-}
+      listEl.querySelectorAll('.tally').forEach(t => {
+        t.addEventListener('click', () => {
+          const id = t.dataset.id;
+          const field = t.dataset.field;
+          const o = orders.find(x => x.id === id);
+          updateOrder(id, { [field]: !o[field] });
+        });
+      });
+      listEl.querySelectorAll('.edit-name').forEach(inp => {
+        inp.addEventListener('change', () => updateOrder(inp.closest('.row').dataset.id, { name: inp.value.trim() || 'Sem nome' }));
+      });
+      listEl.querySelectorAll('.edit-dept').forEach(sel => {
+        sel.addEventListener('change', () => updateOrder(sel.closest('.row').dataset.id, { department: sel.value }));
+      });
+      listEl.querySelectorAll('.del-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteOrder(btn.dataset.id));
+      });
+      listEl.querySelectorAll('.sizes-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          if (expandedRows.has(id)) expandedRows.delete(id); else expandedRows.add(id);
+          render();
+        });
+      });
+      listEl.querySelectorAll('.row-size-add').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const select = listEl.querySelector(`.row-size-select[data-id="${id}"]`);
+          const qtyInput = listEl.querySelector(`.row-size-qty[data-id="${id}"]`);
+          const qty = Math.max(1, parseInt(qtyInput.value) || 1);
+          const o = orders.find(x => x.id === id);
+          const existing = o.sizes.find(s => s.size === select.value);
+          if (existing) existing.quantity += qty;
+          else o.sizes.push({ size: select.value, quantity: qty });
+          saveSizes(id, o.sizes);
+          render();
+        });
+      });
+      listEl.querySelectorAll('.size-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const idx = parseInt(btn.dataset.idx);
+          const o = orders.find(x => x.id === id);
+          o.sizes.splice(idx, 1);
+          saveSizes(id, o.sizes);
+          render();
+        });
+      });
+    }
 
-function render() {
-  if (!loaded) return;
-  renderChips();
-  renderStats();
-  renderList();
-}
+    function render() {
+      if (!loaded) return;
+      renderChips();
+      renderStats();
+      renderList();
+    }
 
-function renderSizeBuilder() {
-  $('#sizeBuilderRows').innerHTML = newOrderSizes.map((s, i) => `
+    function renderSizeBuilder() {
+      $('#sizeBuilderRows').innerHTML = newOrderSizes.map((s, i) => `
     <div class="size-builder-row">
       <select class="new-size-select" data-idx="${i}">
         ${SIZES.map(sz => `<option value="${sz}" ${sz === s.size ? 'selected' : ''}>${sz}</option>`).join('')}
@@ -707,48 +1049,49 @@ function renderSizeBuilder() {
     </div>
   `).join('');
 
-  $('#sizeBuilderRows').querySelectorAll('.new-size-select').forEach(sel => {
-    sel.addEventListener('change', () => { newOrderSizes[sel.dataset.idx].size = sel.value; });
-  });
-  $('#sizeBuilderRows').querySelectorAll('.new-size-qty').forEach(inp => {
-    inp.addEventListener('change', () => { newOrderSizes[inp.dataset.idx].quantity = Math.max(1, parseInt(inp.value) || 1); });
-  });
-  $('#sizeBuilderRows').querySelectorAll('.remove-size-row').forEach(btn => {
-    btn.addEventListener('click', () => {
-      newOrderSizes.splice(btn.dataset.idx, 1);
+      $('#sizeBuilderRows').querySelectorAll('.new-size-select').forEach(sel => {
+        sel.addEventListener('change', () => { newOrderSizes[sel.dataset.idx].size = sel.value; });
+      });
+      $('#sizeBuilderRows').querySelectorAll('.new-size-qty').forEach(inp => {
+        inp.addEventListener('change', () => { newOrderSizes[inp.dataset.idx].quantity = Math.max(1, parseInt(inp.value) || 1); });
+      });
+      $('#sizeBuilderRows').querySelectorAll('.remove-size-row').forEach(btn => {
+        btn.addEventListener('click', () => {
+          newOrderSizes.splice(btn.dataset.idx, 1);
+          renderSizeBuilder();
+        });
+      });
+    }
+
+    $('#newDept').innerHTML = DEPARTMENTS.map(d => `<option value="${d}">${d}</option>`).join('');
+    renderSizeBuilder();
+
+    $('#addSizeRowBtn').addEventListener('click', () => {
+      newOrderSizes.push({ size: 'M', quantity: 1 });
       renderSizeBuilder();
     });
-  });
-}
 
-$('#newDept').innerHTML = DEPARTMENTS.map(d => `<option value="${d}">${d}</option>`).join('');
-renderSizeBuilder();
+    $('#toggleForm').addEventListener('click', () => {
+      $('#addForm').classList.toggle('open');
+      if ($('#addForm').classList.contains('open')) $('#newName').focus();
+    });
 
-$('#addSizeRowBtn').addEventListener('click', () => {
-  newOrderSizes.push({ size: 'M', quantity: 1 });
-  renderSizeBuilder();
-});
+    $('#submitNew').addEventListener('click', () => {
+      const name = $('#newName').value.trim();
+      if (!name) { showToast('Digite o nome da pessoa.'); return; }
+      if (newOrderSizes.every(s => s.quantity <= 0)) { showToast('Adicione ao menos um tamanho.'); return; }
+      addOrder(name, $('#newDept').value, JSON.parse(JSON.stringify(newOrderSizes)));
+      $('#newName').value = '';
+      newOrderSizes = [{ size: 'M', quantity: 1 }];
+      renderSizeBuilder();
+      $('#newName').focus();
+      showToast('Pedido adicionado.');
+    });
 
-$('#toggleForm').addEventListener('click', () => {
-  $('#addForm').classList.toggle('open');
-  if ($('#addForm').classList.contains('open')) $('#newName').focus();
-});
+    $('#newName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#submitNew').click(); });
 
-$('#submitNew').addEventListener('click', () => {
-  const name = $('#newName').value.trim();
-  if (!name) { showToast('Digite o nome da pessoa.'); return; }
-  if (newOrderSizes.every(s => s.quantity <= 0)) { showToast('Adicione ao menos um tamanho.'); return; }
-  addOrder(name, $('#newDept').value, JSON.parse(JSON.stringify(newOrderSizes)));
-  $('#newName').value = '';
-  newOrderSizes = [{ size: 'M', quantity: 1 }];
-  renderSizeBuilder();
-  $('#newName').focus();
-  showToast('Pedido adicionado.');
-});
-
-$('#newName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#submitNew').click(); });
-
-loadOrders();
-</script>
+    loadOrders();
+  </script>
 </body>
+
 </html>
