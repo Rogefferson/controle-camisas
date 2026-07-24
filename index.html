@@ -484,6 +484,15 @@
       gap: 3px;
     }
 
+    .tally-label {
+      display: none;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
     .tally {
       width: 30px;
       height: 30px;
@@ -705,7 +714,95 @@
     }
 
     /* ---------- Mobile ---------- */
+    /* ---------- Tablet (768–1024 e faixas próximas) ---------- */
+    @media (min-width: 721px) and (max-width: 1024px) {
+      #app {
+        padding: 24px 20px 56px;
+      }
+
+      .stats {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .add-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .list-head {
+        display: none;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-areas:
+          "name name dept dept"
+          "sizes sizes sizes sizes"
+          "p1 p2 del rem";
+        gap: 12px 10px;
+        padding: 16px;
+        align-items: start;
+      }
+
+      .row>div:nth-child(1) {
+        grid-area: name;
+      }
+
+      .row>div:nth-child(2) {
+        grid-area: dept;
+      }
+
+      .row>div:nth-child(3) {
+        grid-area: sizes;
+      }
+
+      .row>div:nth-child(4) {
+        grid-area: p1;
+      }
+
+      .row>div:nth-child(5) {
+        grid-area: p2;
+      }
+
+      .row>div:nth-child(6) {
+        grid-area: del;
+        align-self: center;
+        justify-self: center;
+      }
+
+      .row>div:nth-child(7) {
+        grid-area: rem;
+        align-self: center;
+        justify-self: end;
+      }
+
+      .row>div[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+
+      .tally-label {
+        display: block;
+      }
+
+      .del-btn {
+        font-size: 18px;
+        padding: 8px;
+      }
+    }
+
+    /* ---------- Mobile (celular, <=720px) ---------- */
     @media (max-width: 720px) {
+      #app {
+        padding: 18px 14px 48px;
+      }
+
       .stats {
         grid-template-columns: repeat(2, 1fr);
       }
@@ -721,6 +818,28 @@
       .row {
         grid-template-columns: 1fr;
         gap: 10px;
+        padding: 14px;
+      }
+
+      .row>div[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 10px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+
+      .tally-label {
+        display: block;
+      }
+
+      .del-btn {
+        font-size: 18px;
+        padding: 8px;
+        align-self: flex-end;
       }
     }
   </style>
@@ -974,6 +1093,7 @@
       const overdue = !on && new Date() > deadline;
       return `
     <div class="tally-cell">
+      <span class="tally-label">${label}</span>
       <div class="tally ${on ? 'on' : ''} ${overdue ? 'overdue' : ''}" data-id="${order.id}" data-field="${field}" title="${label}"></div>
       <span class="tally-deadline ${overdue ? 'overdue-label' : ''}">${overdue ? 'atrasado' : fmtDate(deadline)}</span>
     </div>`;
@@ -1034,13 +1154,13 @@
         return `
     <div class="row-block">
       <div class="row ${isMulti ? 'has-multi' : ''}" data-id="${o.id}">
-        <div><input type="text" class="edit-name" value="${o.name.replace(/"/g, '&quot;')}"></div>
-        <div>
+        <div data-label="Nome"><input type="text" class="edit-name" value="${o.name.replace(/"/g, '&quot;')}"></div>
+        <div data-label="Departamento">
           <select class="edit-dept">
             ${DEPARTMENTS.map(d => `<option value="${d}" ${d === o.department ? 'selected' : ''}>${d}</option>`).join('')}
           </select>
         </div>
-        <div>
+        <div data-label="Tamanhos">
           <span class="sizes-cell-label">${totalQty(o)} camisa${totalQty(o) === 1 ? '' : 's'}${isMulti ? ' · múltiplos tamanhos' : ''}</span>
           <div class="size-chips-inline">
             ${o.sizes.map(s => `<span class="size-chip ${isMulti ? 'multi' : ''}">${s.size}×${s.quantity}</span>`).join('') || '<span class="size-chip empty">Sem tamanho definido</span>'}
@@ -1050,6 +1170,7 @@
         <div>${tallyCell(o, 'payment1', PAY1_DEADLINE, 'Pagamento 1')}</div>
         <div>${tallyCell(o, 'payment2', PAY2_DEADLINE, 'Pagamento 2')}</div>
         <div class="tally-cell">
+          <span class="tally-label">Entregue</span>
           <div class="tally ${o.delivered ? 'on' : ''}" data-id="${o.id}" data-field="delivered" title="Entregue"></div>
         </div>
         <div><button class="del-btn" data-id="${o.id}" title="Remover">✕</button></div>
