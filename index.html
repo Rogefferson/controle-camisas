@@ -113,7 +113,12 @@
     font-family: 'IBM Plex Mono', monospace;
     font-size: 12px;
     color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
   }
+  .size-summary-badge:hover { border-color: var(--text-muted); background: var(--surface-2); }
+  .size-summary-badge.active { background: var(--red-dim); border-color: var(--red); color: var(--text); }
+  .size-summary-badge.active b { color: var(--text); }
   .size-summary-badge b { color: var(--text); font-size: 13px; }
 
   /* ---------- Search ---------- */
@@ -573,6 +578,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let orders = [];
 let activeFilter = 'Todos';
 let searchQuery = '';
+let activeSizeFilter = null;
 let expandedRows = new Set();
 let newOrderSizes = [{ size: 'M', quantity: 1 }];
 let loaded = false;
@@ -737,9 +743,17 @@ function renderStats() {
 
   const bySize = {};
   orders.forEach(o => o.sizes.forEach(s => { bySize[s.size] = (bySize[s.size] || 0) + s.quantity; }));
-  const sizeKeys = Object.keys(bySize);
+  const sizeKeys = SIZES.filter(k => bySize[k] > 0);
+  Object.keys(bySize).forEach(k => { if (!sizeKeys.includes(k)) sizeKeys.push(k); });
   sizeSummaryStripEl.innerHTML = sizeKeys.length === 0 ? '' :
-    sizeKeys.map(k => `<div class="size-summary-badge">${k}: <b>${bySize[k]}</b></div>`).join('');
+    sizeKeys.map(k => `<button class="size-summary-badge ${activeSizeFilter === k ? 'active' : ''}" data-size="${k}">${k}: <b>${bySize[k]}</b></button>`).join('');
+  sizeSummaryStripEl.querySelectorAll('.size-summary-badge').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const size = btn.dataset.size;
+      activeSizeFilter = activeSizeFilter === size ? null : size;
+      render();
+    });
+  });
 }
 
 function formatBRL(value) {
@@ -848,8 +862,10 @@ function renderList() {
     : activeFilter === 'MULTI' ? orders.filter(o => o.sizes.length > 1)
     : orders.filter(o => o.department === activeFilter);
 
+  const bySize = activeSizeFilter ? byFilter.filter(o => o.sizes.some(s => s.size === activeSizeFilter)) : byFilter;
+
   const query = searchQuery.trim().toLowerCase();
-  const filtered = query ? byFilter.filter(o => o.name.toLowerCase().includes(query)) : byFilter;
+  const filtered = query ? bySize.filter(o => o.name.toLowerCase().includes(query)) : bySize;
 
   if (orders.length === 0) {
     listEl.innerHTML = '';
@@ -864,6 +880,9 @@ function renderList() {
     if (query) {
       emptyEl.querySelector('strong').textContent = 'Nenhum nome encontrado';
       emptyEl.lastChild.textContent = `Ninguém correspondendo a "${searchQuery.trim()}"${activeFilter !== 'Todos' ? ` em "${activeFilter}"` : ''}.`;
+    } else if (activeSizeFilter) {
+      emptyEl.querySelector('strong').textContent = 'Nada por aqui';
+      emptyEl.lastChild.textContent = `Ninguém com o tamanho "${activeSizeFilter}"${activeFilter !== 'Todos' ? ` em "${activeFilter}"` : ''}.`;
     } else {
       emptyEl.querySelector('strong').textContent = 'Nada por aqui';
       emptyEl.lastChild.textContent = activeFilter === 'MULTI'
