@@ -879,7 +879,9 @@ function buildNameListPdf({ title, subtitle, list, emptyMessage, filenamePrefix 
     return;
   }
 
-  const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  const sorted = [...list].sort((a, b) =>
+    a.department.localeCompare(b.department, 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR')
+  );
   const rows = sorted.map(o => [o.name, o.department, sizesText(o)]);
 
   const { jsPDF } = window.jspdf;
