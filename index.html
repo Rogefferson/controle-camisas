@@ -218,6 +218,36 @@
   }
   .btn-report:hover { border-color: var(--text-muted); background: var(--surface-2); }
 
+  .dropdown-wrap { position: relative; }
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 220px;
+    z-index: 20;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    overflow: hidden;
+  }
+  .dropdown-menu.open { display: block; }
+  .dropdown-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  .dropdown-item:hover { background: var(--surface-2); }
+  .dropdown-item + .dropdown-item { border-top: 1px solid var(--border); }
+
   /* ---------- Add form ---------- */
   .add-form {
     display: none;
@@ -524,6 +554,14 @@
     <div class="chips" id="chips"></div>
     <div class="toolbar-actions">
       <button class="btn-report" id="generateReport">📄 Relatório PDF</button>
+      <div class="dropdown-wrap">
+        <button class="btn-report" id="toggleListsMenu">📋 Relações ▾</button>
+        <div class="dropdown-menu" id="listsMenu">
+          <button class="dropdown-item" id="genPay1Pending">Pendentes — Pagamento 1</button>
+          <button class="dropdown-item" id="genPay2Pending">Pendentes — Pagamento 2</button>
+          <button class="dropdown-item" id="genDelivered">Camisas já entregues</button>
+        </div>
+      </div>
       <button class="btn-add" id="toggleForm">+ Novo pedido</button>
     </div>
   </div>
@@ -827,6 +865,89 @@ function generatePdfReport() {
   showToast('Relatório PDF gerado.');
 }
 
+function sizesText(order) {
+  return order.sizes.map(s => `${s.size}×${s.quantity}`).join(', ') || '—';
+}
+
+function buildNameListPdf({ title, subtitle, list, emptyMessage, filenamePrefix }) {
+  if (!window.jspdf) {
+    showToast('Biblioteca de PDF ainda não carregou. Tente novamente em instantes.');
+    return;
+  }
+  if (list.length === 0) {
+    showToast(emptyMessage);
+    return;
+  }
+
+  const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  const rows = sorted.map(o => [o.name, o.department, sizesText(o)]);
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const center = pageWidth / 2;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(title, center, 54, { align: 'center' });
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text(subtitle, center, 74, { align: 'center' });
+
+  doc.autoTable({
+    startY: 100,
+    head: [['NOME', 'DEPARTAMENTO', 'TAMANHOS']],
+    body: rows,
+    theme: 'plain',
+    styles: { font: 'helvetica', fontSize: 11, cellPadding: 7, textColor: [20, 20, 20] },
+    headStyles: { fontStyle: 'bold', halign: 'left', fontSize: 11 },
+    columnStyles: {
+      0: { halign: 'left', cellWidth: 170 },
+      1: { halign: 'left', cellWidth: 165 },
+      2: { halign: 'left', cellWidth: 180 }
+    }
+  });
+
+  const finalY = doc.lastAutoTable.finalY;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(`Total: ${sorted.length} pessoa${sorted.length === 1 ? '' : 's'}`, 40, finalY + 26);
+
+  const today = new Date().toISOString().slice(0, 10);
+  doc.save(`${filenamePrefix}-${today}.pdf`);
+  showToast('Relação PDF gerada.');
+}
+
+function generatePay1PendingPdf() {
+  buildNameListPdf({
+    title: 'RELAÇÃO — PENDENTES PAGAMENTO 1',
+    subtitle: 'CONTROLE DE CAMISAS — MÍDIA',
+    list: orders.filter(o => !o.payment1),
+    emptyMessage: 'Ninguém pendente no Pagamento 1.',
+    filenamePrefix: 'pendentes-pagamento-1'
+  });
+}
+
+function generatePay2PendingPdf() {
+  buildNameListPdf({
+    title: 'RELAÇÃO — PENDENTES PAGAMENTO 2',
+    subtitle: 'CONTROLE DE CAMISAS — MÍDIA',
+    list: orders.filter(o => !o.payment2),
+    emptyMessage: 'Ninguém pendente no Pagamento 2.',
+    filenamePrefix: 'pendentes-pagamento-2'
+  });
+}
+
+function generateDeliveredPdf() {
+  buildNameListPdf({
+    title: 'RELAÇÃO — CAMISAS JÁ ENTREGUES',
+    subtitle: 'CONTROLE DE CAMISAS — MÍDIA',
+    list: orders.filter(o => o.delivered),
+    emptyMessage: 'Ninguém recebeu a camisa ainda.',
+    filenamePrefix: 'camisas-entregues'
+  });
+}
+
 function tallyCell(order, field, deadline, label) {
   const on = order[field];
   const overdue = !on && new Date() > deadline;
@@ -1015,6 +1136,26 @@ $('#addSizeRowBtn').addEventListener('click', () => {
 });
 
 $('#generateReport').addEventListener('click', generatePdfReport);
+
+$('#toggleListsMenu').addEventListener('click', (e) => {
+  e.stopPropagation();
+  $('#listsMenu').classList.toggle('open');
+});
+document.addEventListener('click', () => {
+  $('#listsMenu').classList.remove('open');
+});
+$('#genPay1Pending').addEventListener('click', () => {
+  $('#listsMenu').classList.remove('open');
+  generatePay1PendingPdf();
+});
+$('#genPay2Pending').addEventListener('click', () => {
+  $('#listsMenu').classList.remove('open');
+  generatePay2PendingPdf();
+});
+$('#genDelivered').addEventListener('click', () => {
+  $('#listsMenu').classList.remove('open');
+  generateDeliveredPdf();
+});
 
 $('#toggleForm').addEventListener('click', () => {
   $('#addForm').classList.toggle('open');
